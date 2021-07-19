@@ -55,19 +55,10 @@ public class SellerDaoJDBC implements SellerDao{
 			rs = st.executeQuery();
 			
 			if(rs.next()) {
-				Department d = new Department();
-				d.setId(rs.getInt("DepartmentId"));//nome da coluna no BD que contém o id do departamento
-				d.setName(rs.getString("DepName"));
+				Department d = instantiateDepartment(rs);
+				Seller seller = instantiateSeller(rs,d);
 				
-				Seller s = new Seller();
-				s.setId(rs.getInt("Id"));
-				s.setName(rs.getString("Name"));
-				s.setEmail(rs.getString("Email"));
-				s.setBaseSalary(rs.getDouble("BaseSalary"));
-				s.setBirthDate(rs.getDate("BirthDate"));
-				s.setDepartment(d);
-				
-				return s;
+				return seller;
 			}
 			return null;
 			
@@ -77,6 +68,26 @@ public class SellerDaoJDBC implements SellerDao{
 			DB.closeResultSet(rs);
 			DB.closeStatement(st);
 		}
+	}
+
+	private Seller instantiateSeller(ResultSet rs, Department d) throws SQLException {
+		Seller s = new Seller();
+		s.setId(rs.getInt("Id"));
+		s.setName(rs.getString("Name"));
+		s.setEmail(rs.getString("Email"));
+		s.setBaseSalary(rs.getDouble("BaseSalary"));
+		s.setBirthDate(rs.getDate("BirthDate"));
+		s.setDepartment(d);
+		
+		return s;
+	}
+
+	private Department instantiateDepartment(ResultSet rs) throws SQLException {
+		Department d = new Department();
+		d.setId(rs.getInt("DepartmentId"));//nome da coluna no BD que contém o id do departamento
+		d.setName(rs.getString("DepName"));
+		
+		return d;
 	}
 
 	@Override
