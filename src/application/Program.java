@@ -20,6 +20,13 @@ public class Program {
 		System.out.println("\n=== TESTE 2: Encontrar vendedor por Departamento ===");
 		Department dep = new Department(2,null);
 		List<Seller> list = sellerDao.findByDepartment(dep);
+		
+		for(Seller s : list) {
+			System.out.println(s);
+		}
+		
+		System.out.println("\n=== TESTE 3: Encontrar todos os vendedores ===");
+		list = sellerDao.findAll();
 		for(Seller s : list) {
 			System.out.println(s);
 		}
