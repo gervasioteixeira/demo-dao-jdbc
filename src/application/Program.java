@@ -37,5 +37,15 @@ public class Program {
 
 		sellerDao.insert(newSeller);
 		System.out.println("Vendedor inserido! Id= " + newSeller.getId());
+
+		System.out.println("\n=== TESTE 5: Update vendedor ===");
+		seller = sellerDao.findById(1);// carregar dados do vendedor 1 no objeto seller já instanciado
+		seller.setName("Carlos");
+		
+		//atualizar o nome do vendedor 1 para carlos
+		//não precisa passar todos os dados pq já está carregado no seller a partir do id 1
+		sellerDao.update(seller);
+
+		System.out.println("Vendedor atualizado");
 	}
 }

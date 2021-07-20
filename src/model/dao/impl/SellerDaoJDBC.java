@@ -17,94 +17,104 @@ import model.dao.SellerDao;
 import model.entities.Department;
 import model.entities.Seller;
 
-public class SellerDaoJDBC implements SellerDao{
+public class SellerDaoJDBC implements SellerDao {
 
 	private Connection conn;
-	
-	public SellerDaoJDBC(Connection conn) {//a conexão vem do DaoFactory
-		this.conn=conn;
+
+	public SellerDaoJDBC(Connection conn) {// a conexão vem do DaoFactory
+		this.conn = conn;
 	}
-	
+
 	@Override
 	public void insert(Seller seller) {
 		PreparedStatement st = null;
-		
+
 		try {
-			st = conn.prepareStatement(
-					"INSERT INTO seller "
-					+"(Name, Email, BirthDate, BaseSalary, DepartmentId) "
-					+"VALUES "
-					+"(?, ?, ?, ?, ?)",
-					Statement.RETURN_GENERATED_KEYS);
-			
+			st = conn.prepareStatement("INSERT INTO seller " + "(Name, Email, BirthDate, BaseSalary, DepartmentId) "
+					+ "VALUES " + "(?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+
 			st.setString(1, seller.getName());
 			st.setString(2, seller.getEmail());
 			st.setDate(3, new java.sql.Date(seller.getBirthDate().getTime()));
 			st.setDouble(4, seller.getBaseSalary());
 			st.setInt(5, seller.getDepartment().getId());
-			
+
 			int linhasAfetadas = st.executeUpdate();
-			
-			if(linhasAfetadas>0) {//significa que inseriu um valor
+
+			if (linhasAfetadas > 0) {// significa que inseriu um valor
 				ResultSet rs = st.getGeneratedKeys();
-				if(rs.next()) {
-					int id = rs.getInt(1);//valor do id gerado pelo BD
+				if (rs.next()) {
+					int id = rs.getInt(1);// valor do id gerado pelo BD
 					seller.setId(id);
 				}
 				DB.closeResultSet(rs);
-			}else {
+			} else {
 				throw new DbException("Erro: nenhuma linha inserida");
 			}
-			
+
 		} catch (SQLException e) {
 			throw new DbException(e.getMessage());
-		}finally {
+		} finally {
 			DB.closeStatement(st);
 		}
-		
-		
-		
 	}
 
 	@Override
 	public void update(Seller seller) {
-		// TODO Auto-generated method stub
-		
+		PreparedStatement st = null;
+
+		try {
+			st = conn.prepareStatement("UPDATE seller "
+					+ "SET Name = ?, Email = ?, BirthDate = ?, BaseSalary = ?, DepartmentId = ? " + "WHERE Id = ?");
+
+			st.setString(1, seller.getName());
+			st.setString(2, seller.getEmail());
+			st.setDate(3, new java.sql.Date(seller.getBirthDate().getTime()));
+			st.setDouble(4, seller.getBaseSalary());
+			st.setInt(5, seller.getDepartment().getId());
+			st.setInt(6, seller.getId());
+
+			st.executeUpdate();
+
+		} catch (SQLException e) {
+			throw new DbException(e.getMessage());
+		} finally {
+			DB.closeStatement(st);
+		}
+
 	}
 
 	@Override
 	public void deleteById(Integer id) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public Seller findById(Integer id) {
 		PreparedStatement st = null;
 		ResultSet rs = null;
-		
+
 		try {
-			st=conn.prepareStatement(
-					"SELECT seller.*,department.Name as DepName "
-					+ "FROM seller INNER JOIN department "
-					+ "ON seller.DepartmentId = department.Id "
-					+ "WHERE seller.Id = ?");
-			
+			st = conn.prepareStatement(
+					"SELECT seller.*,department.Name as DepName " + "FROM seller INNER JOIN department "
+							+ "ON seller.DepartmentId = department.Id " + "WHERE seller.Id = ?");
+
 			st.setInt(1, id);
-			
+
 			rs = st.executeQuery();
-			
-			if(rs.next()) {
+
+			if (rs.next()) {
 				Department d = instantiateDepartment(rs);
-				Seller seller = instantiateSeller(rs,d);
-				
+				Seller seller = instantiateSeller(rs, d);
+
 				return seller;
 			}
 			return null;
-			
+
 		} catch (SQLException e) {
 			throw new DbException(e.getMessage());
-		}finally {
+		} finally {
 			DB.closeResultSet(rs);
 			DB.closeStatement(st);
 		}
@@ -118,15 +128,15 @@ public class SellerDaoJDBC implements SellerDao{
 		s.setBaseSalary(rs.getDouble("BaseSalary"));
 		s.setBirthDate(rs.getDate("BirthDate"));
 		s.setDepartment(d);
-		
+
 		return s;
 	}
 
 	private Department instantiateDepartment(ResultSet rs) throws SQLException {
 		Department d = new Department();
-		d.setId(rs.getInt("DepartmentId"));//nome da coluna no BD que contém o id do departamento
+		d.setId(rs.getInt("DepartmentId"));// nome da coluna no BD que contém o id do departamento
 		d.setName(rs.getString("DepName"));
-		
+
 		return d;
 	}
 
@@ -134,36 +144,39 @@ public class SellerDaoJDBC implements SellerDao{
 	public List<Seller> findAll() {
 		PreparedStatement st = null;
 		ResultSet rs = null;
-		
+
 		try {
-			st=conn.prepareStatement("SELECT seller.*,department.Name as DepName "
-					+ "FROM seller INNER JOIN department "
-					+ "ON seller.DepartmentId = department.Id "
-					+ "ORDER BY Name");
-				
+			st = conn.prepareStatement(
+					"SELECT seller.*,department.Name as DepName " + "FROM seller INNER JOIN department "
+							+ "ON seller.DepartmentId = department.Id " + "ORDER BY Name");
+
 			rs = st.executeQuery();
-			List <Seller> list = new ArrayList<>();
-			
-			Map<Integer, Department> map =new HashMap<>(); //Para controlar a não repetição do departamento (para não instanciar um departamento diferente para cada instância de funcionario)
-			
-			while(rs.next()) {
-				Department depmap = map.get(rs.getInt("DepartmentID"));//verifica se no map já existe o departamento cadastrado (busca pelo id que vem pelo ResultSet)
-				
-				if(depmap==null) {
-					depmap=instantiateDepartment(rs);
+			List<Seller> list = new ArrayList<>();
+
+			Map<Integer, Department> map = new HashMap<>(); // Para controlar a não repetição do departamento (para não
+															// instanciar um departamento diferente para cada instância
+															// de funcionario)
+
+			while (rs.next()) {
+				Department depmap = map.get(rs.getInt("DepartmentID"));// verifica se no map já existe o departamento
+																		// cadastrado (busca pelo id que vem pelo
+																		// ResultSet)
+
+				if (depmap == null) {
+					depmap = instantiateDepartment(rs);
 					map.put(rs.getInt("DepartmentID"), depmap);
 				}
-				
-				Seller seller = instantiateSeller(rs,depmap);
-				
+
+				Seller seller = instantiateSeller(rs, depmap);
+
 				list.add(seller);
-				
+
 			}
 			return list;
-			
+
 		} catch (SQLException e) {
 			throw new DbException(e.getMessage());
-		}finally {
+		} finally {
 			DB.closeResultSet(rs);
 			DB.closeStatement(st);
 		}
@@ -172,41 +185,43 @@ public class SellerDaoJDBC implements SellerDao{
 
 	@Override
 	public List<Seller> findByDepartment(Department dep) {
-		
+
 		PreparedStatement st = null;
 		ResultSet rs = null;
-		
+
 		try {
-			st=conn.prepareStatement("SELECT seller.*,department.Name as DepName "
-					+ "FROM seller INNER JOIN department "
-					+ "ON seller.DepartmentId = department.Id "
-					+ "WHERE DepartmentId = ? "
-					+ "ORDER BY Name");
-			
+			st = conn.prepareStatement(
+					"SELECT seller.*,department.Name as DepName " + "FROM seller INNER JOIN department "
+							+ "ON seller.DepartmentId = department.Id " + "WHERE DepartmentId = ? " + "ORDER BY Name");
+
 			st.setInt(1, dep.getId());
-			
+
 			rs = st.executeQuery();
-			List <Seller> list = new ArrayList<>();
-			Map<Integer, Department> map =new HashMap<>(); //Para controlar a não repetição do departamento (para não instanciar um departamento diferente para cada instância de funcionario)
-			
-			while(rs.next()) {
-				Department depmap = map.get(rs.getInt("DepartmentID"));//verifica se no map já existe o departamento cadastrado (busca pelo id que vem pelo ResultSet)
-				
-				if(depmap==null) {
-					depmap=instantiateDepartment(rs);
+			List<Seller> list = new ArrayList<>();
+			Map<Integer, Department> map = new HashMap<>(); // Para controlar a não repetição do departamento (para não
+															// instanciar um departamento diferente para cada instância
+															// de funcionario)
+
+			while (rs.next()) {
+				Department depmap = map.get(rs.getInt("DepartmentID"));// verifica se no map já existe o departamento
+																		// cadastrado (busca pelo id que vem pelo
+																		// ResultSet)
+
+				if (depmap == null) {
+					depmap = instantiateDepartment(rs);
 					map.put(rs.getInt("DepartmentID"), depmap);
 				}
-				
-				Seller seller = instantiateSeller(rs,depmap);
-				
+
+				Seller seller = instantiateSeller(rs, depmap);
+
 				list.add(seller);
-				
+
 			}
 			return list;
-			
+
 		} catch (SQLException e) {
 			throw new DbException(e.getMessage());
-		}finally {
+		} finally {
 			DB.closeResultSet(rs);
 			DB.closeStatement(st);
 		}
